@@ -2,27 +2,45 @@ name: Build and release
 
 on:
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Tag name for the release (e.g., v1.2.3)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release?'
+        required: false
+        default: false
+        type: boolean
   push:
     branches:
       - main
     tags:
       - v?[0-9]+.[0-9]+.[0-9]+ # semver
-      - '!dev-build' # not dev-build
+      - '!dev-build'           # not dev-build
 
 jobs:
   build:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    # Run on tag pushes OR on workflow_dispatch (when a tag name is provided)
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name != '')
     uses: ./.github/workflows/build_artifacts.yml
+
   release:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.tag_name != '')
     runs-on: ubuntu-22.04
     needs: build
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Downloads artifacts
+
+      - name: Download artifacts
         uses: actions/download-artifact@v4
+
       - name: Create release
         uses: softprops/action-gh-release@v2
         with:
