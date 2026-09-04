@@ -47,6 +47,7 @@ jobs:
           files: |
             uad-ng-*/*
             uad-cli-*/*
+          tag_name: ${{ github.event.inputs.tag_name }}
           generate_release_notes: true
           body: |
             > [!NOTE]
